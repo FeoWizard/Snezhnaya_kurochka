@@ -421,7 +421,7 @@ if __name__ == "__main__":
     try:
 
         discobot.bot_config.client.loop.create_task(discobot.bot_config.client.connect())
-        discobot.bot_config.client.loop.create_task(discobot.bot_config.client.login(DISCORD_BOT_TOKEN))
+        discobot.bot_config.client.loop.create_task(discobot.bot_config.client.login(token = DISCORD_BOT_TOKEN, bot = True))
         discobot.bot_config.client.loop.run_forever()
 
     except KeyboardInterrupt:

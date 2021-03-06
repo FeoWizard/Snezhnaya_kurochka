@@ -12,7 +12,7 @@ async def on_member_join(member):
                  None, member.guild.id, member.guild.name, None, None, "ARRIVE"]
     await discobot.functions.database_user_log_write(data_list)
     if (discobot.bot_config.SEND_MESSAGE_SIGN):
-        await discobot.functions.send_notification(member, "join", "prishel na server! :raised_hand::blush:")
+        await discobot.functions.send_notification(member, "welcome", "prishel na server! :raised_hand::blush:")
         await discobot.functions.send_welcome_message(member)
 
 
@@ -76,7 +76,7 @@ async def on_member_unban(guild, user):
                  guild.id, guild.name, None, None, "USER_UNBAN"]
     await discobot.functions.database_user_log_write(data_list)
     if (discobot.bot_config.SEND_MESSAGE_SIGN):
-        await discobot.functions.send_notification(user, "join", "byl razbanen <:ningyo:513676059124957186>", guild)
+        await discobot.functions.send_notification(user, "welcome", "byl razbanen <:ningyo:513676059124957186>", guild)
 
 
 # События сообщений ================================================================================================= #
@@ -100,6 +100,8 @@ async def on_raw_message_delete(payload):
 
 @discobot.bot_config.client.event
 async def on_raw_message_edit(payload):
+    # TODO: Переделать grappler на полноценную асинхронку
+    return
 
     data_list = (payload.channel_id, payload.message_id)
 
