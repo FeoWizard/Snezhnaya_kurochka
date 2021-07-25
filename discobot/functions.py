@@ -1,4 +1,6 @@
+import asyncio
 import datetime
+import gc
 import itertools
 import os
 import random
@@ -10,6 +12,7 @@ from ssl import SSLContext
 from email.mime.text import MIMEText
 from email.header import Header
 
+import discord
 from discord import ChannelType
 import discobot.bot_config
 
@@ -1118,9 +1121,10 @@ async def channel_grappler(channel, last_date: datetime = None):
         else:
             break
 
-    print(discobot.functions.get_time_string() + " //:> " + info_string + " inserting complete\n")
+    print(discobot.functions.get_time_string() + " //:> " + info_string + " inserting complete")
     await discobot.functions.create_log_record(info_string + " inserting complete")
     del data_list
+    print(discobot.functions.get_time_string() + " //:> objects deleted: {}\n".format(str(gc.collect())))
 
 
 # ============ Грапплер для всех каналов ============================================================================ #
@@ -1170,7 +1174,7 @@ async def all_channels_grapple():
                     last_date_string = result[0]
                     last_date = datetime.datetime.strptime(last_date_string, "%Y-%m-%d %H:%M:%S.%f")
 
-                await channel_grappler(channel, last_date)
+                asyncio.create_task(channel_grappler(channel, last_date))
 
             except BaseException as databaseErr:
                 discobot.functions.create_database_error_record(databaseErr)
@@ -1222,7 +1226,6 @@ async def emodzi_stat(guild):  # Рабочая функция, но работ�
 
 
 async def uptime(start_time):
-
     end_time = datetime.datetime.now()
     delta_time = end_time - start_time
     return str(delta_time)[:-3]
@@ -1252,5 +1255,78 @@ async def send_mail(message_recipient: str, message_subject: str, message_text: 
     server.login(user = discobot.bot_config.MAIL_LOGIN, password = discobot.bot_config.MAIL_PASSWORD)
     server.sendmail(msg['From'], msg['To'], msg.as_string())
     server.quit()
+
+
+async def save_user_roles(user: discord.Member):
+    roles_ids = []
+    for role in user.roles:
+        if (role.name != "@everyone"):
+            roles_ids.append(role.id)
+
+    if (not roles_ids):
+        return True
+
+    roles_list = await get_user_roles(user.id)
+    # print("roles_list", roles_list)
+    if (roles_list is None):
+        sql_stmt = "INSERT INTO User_roles " \
+                   "VALUES (?, ?, ?)"
+        sql_args = [None, user.id, str(roles_ids).replace("[", "").replace("]", "")]
+        # print(sql_args)
+    else:
+        sql_stmt = "UPDATE User_roles " \
+                   "SET roles_ids = ? " \
+                   "WHERE user_id = ?"
+        sql_args = [str(roles_ids).replace("[", "").replace("]", ""), user.id]
+        # print(sql_args)
+
+    try:
+        discobot.bot_config.cursor.execute(sql_stmt, sql_args)
+        return True
+
+    except BaseException as databaseErr:
+        create_database_error_record(databaseErr)
+        return False
+
+
+async def get_user_roles(user_id):
+    sql_stmt = "SELECT roles_ids " \
+               "FROM User_roles " \
+               "WHERE user_id = ?"
+    sql_args = [user_id]
+
+    try:
+        discobot.bot_config.cursor.execute(sql_stmt, sql_args)
+        result     = discobot.bot_config.cursor.fetchall()
+        # print("get_user_roles()", result)
+
+        if (result):
+            roles_list = [int(x) for x in result[0][0].split(", ")]
+            return roles_list
+        else:
+            return None
+
+    except BaseException as databaseErr:
+        create_database_error_record(databaseErr)
+        return None
+
+
+async def set_user_roles(user: discord.Member, roles_ids, reason: str = "bot added"):
+
+    if (not roles_ids):
+        return False
+
+    roles  = []
+    server = user.guild
+    for role_id in roles_ids:
+        server_role = server.get_role(role_id)
+        roles.append(server_role)
+
+    # print(roles)
+    # for role in roles:
+    #     print(role.id, role.name)
+
+    await user.add_roles(*roles, reason = reason, atomic = True)
+
 
 # ========================================== АСИНХРОННЫЕ И НЕ ОЧЕНЬ ФУНКЦИИ ========================================= #

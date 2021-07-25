@@ -156,9 +156,6 @@ async def on_message(message):
         print(discobot.functions.get_time_string() + " //:> bot name:", BOT_NAME)
 
     elif (message_string.startswith("!emo") and is_this_Snezhinka):
-
-
-
         pass
 
     elif(message_string.startswith("!uptime")):
@@ -430,7 +427,7 @@ if __name__ == "__main__":
 
     finally:
 
-        discobot.bot_config.client.loop.run_until_complete(discobot.bot_config.client.logout())
+        discobot.bot_config.client.loop.run_until_complete(discobot.bot_config.client.close())
         print(discobot.functions.get_time_string() + " //:> " + BOT_NAME + " logout")
 
         discobot.bot_config.client.loop.close()
@@ -448,5 +445,3 @@ if __name__ == "__main__":
 
         log_file.close()
         print(discobot.functions.get_time_string() + " //:> " + BOT_NAME + "'s log file is closed!")
-
-    input()

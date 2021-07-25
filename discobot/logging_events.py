@@ -1,3 +1,5 @@
+import discord
+
 import discobot.bot_config
 import discobot.functions
 import discobot.common_events
@@ -7,7 +9,7 @@ from asyncio import sleep
 
 
 @discobot.bot_config.client.event
-async def on_member_join(member):
+async def on_member_join(member: discord.Member):
     data_list = [None, discobot.functions.get_basetime_string(), member.id, discobot.functions.get_username(member),
                  None, member.guild.id, member.guild.name, None, None, "ARRIVE"]
     await discobot.functions.database_user_log_write(data_list)
@@ -15,19 +17,22 @@ async def on_member_join(member):
         await discobot.functions.send_notification(member, "welcome", "prishel na server! :raised_hand::blush:")
         await discobot.functions.send_welcome_message(member)
 
+    roles_ids = await discobot.functions.get_user_roles(member.id)
+    await discobot.functions.set_user_roles(member, roles_ids)
+
 
 @discobot.bot_config.client.event
-async def on_member_remove(member):
+async def on_member_remove(member: discord.Member):
     data_list = [None, discobot.functions.get_basetime_string(), member.id, discobot.functions.get_username(member),
                  None, member.guild.id, member.guild.name, None, None, "LEAVE"]
     await discobot.functions.database_user_log_write(data_list)
+    await discobot.functions.save_user_roles(member)
     if (discobot.bot_config.SEND_MESSAGE_SIGN):
         await discobot.functions.send_notification(member, "leave", "ushel s servera <:aqua_sad:504357956499013633>")
 
 
 @discobot.bot_config.client.event
 async def on_member_update(before, after):
-
     if (before.nick != after.nick):
         data_list = [None, discobot.functions.get_basetime_string(), before.id, discobot.functions.get_username(before),
                      None, before.guild.id, before.guild.name, before.nick, after.nick, "NICKNAME_CHANGE"]
@@ -50,7 +55,6 @@ async def on_member_update(before, after):
 
 @discobot.bot_config.client.event
 async def on_user_update(before, after):
-
     if (before.avatar != after.avatar):
         return
     else:
@@ -84,7 +88,6 @@ async def on_member_unban(guild, user):
 
 @discobot.bot_config.client.event
 async def on_raw_message_delete(payload):
-
     data_list = (payload.guild_id, payload.channel_id, payload.message_id)
 
     try:
@@ -225,7 +228,6 @@ async def on_guild_remove(guild):
 
 @discobot.bot_config.client.event
 async def on_guild_update(before, after):
-
     if (before.name != after.name):
         data_list = [None, discobot.functions.get_basetime_string(), before.id,
                      before.name, after.name, "SERVER_RENAME"]
@@ -257,7 +259,6 @@ async def on_guild_channel_delete(channel):
 
 @discobot.bot_config.client.event
 async def on_guild_channel_update(before, after):
-
     member             = before.guild.me
     permissions_before = before.permissions_for(member)
     permissions_after  = after.permissions_for(member)
