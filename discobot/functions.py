@@ -1098,19 +1098,17 @@ def timer(func):
 
 
 async def send_mail(message_recipient: str, message_subject: str, message_text: str):
-    HOST = "smtp." + discobot.bot_init.MAIL_DOMAIN
-
-    msg = MIMEText(message_text, 'plain', 'utf-8')
-    msg['Subject'] = Header(message_subject, 'utf-8')
-    msg['From']    = discobot.bot_init.MAIL_LOGIN + "@" + discobot.bot_init.MAIL_DOMAIN
-    msg['To']      = message_recipient
-
+    HOST                = "smtp." + discobot.bot_init.MAIL_DOMAIN
     context: SSLContext = ssl.create_default_context()
-
-    server = smtplib.SMTP_SSL(HOST, port = 465, context = context)
+    msg                 = MIMEText(message_text, 'plain', 'utf-8')
+    msg['Subject']      = Header(message_subject, 'utf-8')
+    msg['From']         = discobot.bot_init.MAIL_LOGIN + "@" + discobot.bot_init.MAIL_DOMAIN
+    msg['To']           = message_recipient
+    server              = smtplib.SMTP_SSL(HOST, port = 465, context = context)
     server.login(user = discobot.bot_init.MAIL_LOGIN, password = discobot.bot_init.MAIL_PASSWORD)
     server.sendmail(msg['From'], msg['To'], msg.as_string())
     server.quit()
+    kurologger.info(msg = "email sended!")
 
 
 async def save_user_roles(user: discord.Member):
