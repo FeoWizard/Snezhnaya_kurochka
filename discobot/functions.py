@@ -8,13 +8,14 @@ import re
 import traceback
 import smtplib
 import ssl
-from ssl import SSLContext
+from ssl             import SSLContext
 from email.mime.text import MIMEText
-from email.header import Header
+from email.header    import Header
 
 import discord
-from discord import ChannelType
+from   discord import ChannelType
 import discobot.bot_config
+from discobot.bot_config import kurologger
 
 allowed_list           = []  # Список объектов типа "Channel"
 channel_semaphore_list = []  # Список Channel.id типа "int"
@@ -198,40 +199,15 @@ async def send_rand_number(message: str, channel, user):
 
 
 async def create_log_record(event: str, *args):
-    try:
+    log_string = str(event)
+    if (len(args) != 0):
+        log_string += " args: " + str(args)
 
-        log_string = get_time_string() + " //:> " + str(event) + "; "
-        if (len(args) != 0):
-            log_string += "args: " + str(args) + "\n"
-        else:
-            log_string += "\n"
-
-        discobot.bot_config.log_file.write(log_string)
-        discobot.bot_config.log_file.flush()
-    except BaseException as fileErr:
-        print(get_time_string() + " //:> log file error:", fileErr)
+    kurologger.info(msg = log_string)
 
 
-def create_database_duplicate_error_record(reason: str):
-    try:
-        discobot.bot_config.log_file.write(get_time_string() + " //:> Database error:" +
-                                           " Attempt to write the same value; Reason: " + reason + "\n")
-        discobot.bot_config.log_file.flush()
-    except BaseException as fileErr:
-        print(get_time_string() + " //:> log file error:", fileErr)
-    finally:
-        print(get_time_string() + " //:> Database error:" + " Attempt to write the same value" +
-              "; Reason: " + reason)
-
-
-def create_database_error_record(databaseErr):
-    try:
-        discobot.bot_config.log_file.write(get_time_string() + " //:> Database error: " + str(databaseErr) + "\n")
-        discobot.bot_config.log_file.flush()
-    except BaseException as fileErr:
-        print(get_time_string() + " //:> log file error:", fileErr)
-    finally:
-        print(get_time_string() + " //:> Database error:", databaseErr)
+def create_database_error_record(databaseErr: BaseException):
+    kurologger.error(msg = f"Database error!\n", exc_info = databaseErr)
 
 
 async def get_connections_table_state(entity: str):
@@ -300,7 +276,7 @@ async def update_connections_list(reason: str):
         discobot.bot_config.connection.commit()
     except BaseException as databaseErr:
         create_database_error_record(databaseErr)
-        print("Error in Connected_Servers transaction")
+        kurologger.error(msg = "Error in Connected_Servers transaction")
 
     del serversID
     data_update_list = []
@@ -367,7 +343,7 @@ async def update_connections_list(reason: str):
 
     except BaseException as databaseErr:
         create_database_error_record(databaseErr)
-        print("Error in Connected_Channels transaction")
+        kurologger.error(msg = "Error in Connected_Channels transaction")
 
     del channelsID
     data_update_list = []
@@ -396,12 +372,9 @@ async def update_connections_list(reason: str):
         discobot.bot_config.connection.commit()
     except BaseException as databaseErr:
         create_database_error_record(databaseErr)
-        print("Error in Connected_Users transaction")
-
+        kurologger.error(msg = "Error in Connected_Users transaction")
 
     await create_log_record("Update connections complete, reason: " + reason)
-    print(get_time_string() + " //:> Update connections complete, reason: " + reason)
-
     return allowed_channels
 
 
@@ -415,8 +388,6 @@ async def database_message_log_write(message_data_list):
         create_database_error_record(databaseErr)
         await create_log_record("The message was not recorded to the database, " +
                                 str(len(discobot.functions.message_buffer)) + " messages in message buffer")
-        print(get_time_string() + " //:> The message was not recorded to the database,",
-              len(discobot.functions.message_buffer), "messages in message buffer")
 
 
 async def message_buffer_flush():
@@ -427,10 +398,9 @@ async def message_buffer_flush():
             discobot.bot_config.connection.commit()
             discobot.functions.message_buffer = []  # Очищаем буфер сообщений при удачной записи в базу
             await create_log_record("Messages were recorded to the database, buffer flushed")
-            print(get_time_string() + " //:> Messages were recorded to the database, buffer flushed")
 
         except BaseException as databaseErr:
-            print(get_time_string() + " //:> The database is still busy")
+            kurologger.error(msg = "Database error", exc_info = databaseErr)
 
 
 def message_buffer_counter():
@@ -570,83 +540,6 @@ def check_base_record(sql_text: str, data_list: list):
         return False
 
     return True
-
-
-# Фильтрация логгирования =========================================================================================== #
-# async def get_filter_info(user, server):
-#
-#     sql_text = """
-#      SELECT *
-#      FROM Exception_Users
-#      WHERE (Exception_Users.UserID == ?) AND (Exception_Users.ServerID = ?)
-#      """
-#
-#     data_list = [user.id, server.id]
-#
-#     check = check_base_record(sql_text, data_list)
-#
-#     try:
-#         if (check):
-#             response_text = "On server \"{}\", logging of your messages is enabled".format(server.name)
-#             if discobot.bot_config.SEND_MESSAGE_SIGN: await user.send(response_text)
-#         elif (check == False):
-#             response_text = "On server \"{}\", logging of your messages is disabled".format(server.name)
-#             if discobot.bot_config.SEND_MESSAGE_SIGN: await user.send(response_text)
-#         else:
-#             pass
-#             if discobot.bot_config.SEND_MESSAGE_SIGN: await user.send("Error occurred, please try again")
-#     except BaseException as PrivateMessageError:
-#         try:
-#             discobot.bot_config.log_file.write(get_time_string() + " //:> Private message send error: "
-#                                                + str(PrivateMessageError) + "\n")
-#             discobot.bot_config.log_file.flush()
-#         except BaseException as fileErr:
-#             print(get_time_string() + " //:> log file error:", fileErr)
-#             print(get_time_string() + " //:> Private message send error:", PrivateMessageError)
-#
-#         print(get_time_string() + "; Private message send error:", PrivateMessageError)
-#
-#
-# async def create_filter_record(user, server):
-#
-#     sql_text = """
-#      SELECT *
-#      FROM Exception_Users
-#      WHERE (Exception_Users.UserID == ?) AND (Exception_Users.ServerID = ?)
-#      """
-#
-#     data_list = [user.id, server.id]
-#
-#     check = check_base_record(sql_text, data_list)
-#
-#     if (not check):
-#         create_database_duplicate_error_record("user log filter")
-#         return None
-#     elif ( check is None ):
-#         return None
-#     # for string in discobot.bot_config.cursor:  # Вот так можно считать строки из курсора
-#     #     print(string)
-#
-#     data_list = [user.id, user.name, server.id, server.name]
-#     try:
-#         pass
-#         discobot.bot_config.cursor.execute("INSERT INTO Exception_Users VALUES (?, ?, ?, ?)", data_list)
-#         discobot.bot_config.connection.commit()
-#     except BaseException as databaseErr:
-#         create_database_error_record(databaseErr)
-#
-#
-# async def delete_filter_record(user_id, server_id):
-#     data_list = [user_id, server_id]
-#     try:
-#         discobot.bot_config.cursor.execute("""DELETE FROM Exception_Users
-#                                               WHERE (Exception_Users.UserID == ?)
-#                                               AND (Exception_Users.ServerID == ?)""", data_list)
-#         discobot.bot_config.connection.commit()
-#     except BaseException as databaseErr:
-#         create_database_error_record(databaseErr)
-
-# Фильтрация логгирования =========================================================================================== #
 
 
 # ======================================== Notifications processing ========================================= #
@@ -1009,40 +902,26 @@ async def channel_grappler(channel, last_date: datetime = None):
         channel_name = channel.name
         guild        = channel.guild
 
-    info_string = "Server: " + str(guild) + "; Channel: " + channel_name
+    info_string = f"Server: {guild}; Channel: {channel_name}"
+    kurologger.info(msg = f"{info_string} grappling begin! last date (UTC+0): " + str(last_date)[:shift])
 
-    print(discobot.functions.get_time_string() + " //:> " + info_string
-          + "; grappling begin! last date (UTC+0): " + str(last_date)[:shift])
-    await discobot.functions.create_log_record(info_string + "; grappling begin! last date: (UTC+0)"
-                                               + str(last_date)[:shift])
 
     #  Сбор сообщений из канала # =================================================================================== #
 
     while (True):  # Бесконечный цикл для того, чтобы при неудаче грапплер повторял попытку захвата канала
         # Возможно, стоит сделать ограничение на количество попыток?
         try:
-            print(discobot.functions.get_time_string() + " //:> Try to grapple the channel!")
+            kurologger.info(msg = "Try to grapple the channel!")
             if (last_date is not None):
                 messages_list = await channel.history(limit = None, after = last_date, oldest_first = True).flatten()
             elif (last_date is None):
                 messages_list = await channel.history(limit = None, oldest_first = True).flatten()
 
         except BaseException as error:
-            log_string = "Channel: " + str(channel_name) + "; server: " + str(guild)
-            log_string += "; error: " + str(error)
-            await discobot.functions.create_log_record(log_string)
-            discobot.bot_config.log_file.write("\n")
-            await discobot.functions.create_log_record("", *error.args)
-            discobot.bot_config.log_file.write("\n")
-            await discobot.functions.create_log_record("error stacktrace:")
-            discobot.bot_config.log_file.write("\n")
-            traceback.print_exc(file = discobot.bot_config.log_file)
-            discobot.bot_config.log_file.write("\n")
-            discobot.bot_config.log_file.flush()
-            print(discobot.functions.get_time_string() + " //:> " + log_string)
-            print(discobot.functions.get_time_string() + " //:> Retry to grapple the channel...")
-        else:
+            kurologger.error(msg = f"Channel: {channel_name}; Server: {guild}; Error: {error}", exc_info = error)
+            kurologger.info(msg  = "Retry to grapple the channel..")
 
+        else:
             break  # Если ошибок не было, прерваем бесконечный цикл, и загружаем данные канала в базу
 
     #  Завершение сбора сообщений из канала # ======================================================================= #
@@ -1052,15 +931,10 @@ async def channel_grappler(channel, last_date: datetime = None):
     # можно логгировать этот канал со спокойной душой)
 
     if ( len(messages_list) == 0 ):
-        print(discobot.functions.get_time_string() + " //:> " + info_string + "; no grappled messages\n")
         await discobot.functions.create_log_record(info_string + "; no grappled messages")
         return
 
-    print(discobot.functions.get_time_string() + " //:> " + info_string + "; grappled message count: "
-          + str(len(messages_list)))
     await discobot.functions.create_log_record(info_string + "; grappled message count: " + str(len(messages_list)))
-
-    print(discobot.functions.get_time_string() + " //:> " + info_string + " grappling complete, inserting in database")
     await discobot.functions.create_log_record(info_string + " grappling complete, inserting in database")
 
     #  Подготовка списка данных для транзакции в базу # ============================================================= #
@@ -1121,27 +995,21 @@ async def channel_grappler(channel, last_date: datetime = None):
         else:
             break
 
-    print(discobot.functions.get_time_string() + " //:> " + info_string + " inserting complete")
     await discobot.functions.create_log_record(info_string + " inserting complete")
     del data_list
-    print(discobot.functions.get_time_string() + " //:> objects deleted: {}\n".format(str(gc.collect())))
+    kurologger.info(msg = f"objects deleted: {gc.collect()}")
 
 
 # ============ Грапплер для всех каналов ============================================================================ #
 
 async def all_channels_grapple():
-
-    discobot.functions.grappling_flag = True
-
-    print(discobot.functions.get_time_string() + " //:> Channel grappling begin!\n")
-    await discobot.functions.create_log_record("Channel grappling begin!")
-
+    discobot.functions.grappling_flag         = True
     discobot.functions.channel_semaphore_list = []  # Опустошаем список-семафор, будем пополнять его в channel_grappler
+    await discobot.functions.create_log_record("Channel grappling begin!")
 
     for channel in discobot.bot_config.client.get_all_channels():
 
         # if (discobot.functions.grappling_flag is False):
-        #     print(discobot.functions.get_time_string() + " //:> Channel grappling interrupted!\n")
         #     await discobot.functions.create_log_record("Channel grappling interrupted!")
         #     return
 
@@ -1165,8 +1033,7 @@ async def all_channels_grapple():
                     Database_Channel_Miss_Error_String = "\nExpecting last message date, received NONE; Channel: " \
                                                          + channel.name + "; Server: " + channel.guild.name
 
-                    discobot.bot_config.log_file.write("\n")
-                    discobot.functions.create_database_error_record(Database_Channel_Miss_Error_String)
+                    discobot.functions.create_database_error_record(BaseException(Database_Channel_Miss_Error_String))
 
                     last_date = None
 
@@ -1179,9 +1046,7 @@ async def all_channels_grapple():
             except BaseException as databaseErr:
                 discobot.functions.create_database_error_record(databaseErr)
 
-    print(discobot.functions.get_time_string() + " //:> Channel grappling complete!\n")
     await discobot.functions.create_log_record("Channel grappling complete!")
-
     discobot.functions.grappling_flag = False
 
 # ============ Статистика эмодзи для всех каналов =================================================================== #
@@ -1212,17 +1077,9 @@ async def emodzi_stat(guild):  # Рабочая функция, но работ�
             create_database_error_record(databaseErr)
 
         emo_list.append( (emo_string.strip("%"), len(result)) )
-        # print(guild.name + "; " + emo_string.strip("%") + ": " + str(len(result)))
 
-    print()
     emo_list.sort(key = lambda count: count[1])
 
-    for elem in emo_list:
-        print(elem)
-
-        # print(emo_string)
-        # print(guild.name + "; " + emo.name + ": " + str(None))
-        # print("===============================================\n")
 
 
 async def uptime(start_time):
@@ -1267,18 +1124,15 @@ async def save_user_roles(user: discord.Member):
         return True
 
     roles_list = await get_user_roles(user.id)
-    # print("roles_list", roles_list)
     if (roles_list is None):
         sql_stmt = "INSERT INTO User_roles " \
                    "VALUES (?, ?, ?)"
         sql_args = [None, user.id, str(roles_ids).replace("[", "").replace("]", "")]
-        # print(sql_args)
     else:
         sql_stmt = "UPDATE User_roles " \
                    "SET roles_ids = ? " \
                    "WHERE user_id = ?"
         sql_args = [str(roles_ids).replace("[", "").replace("]", ""), user.id]
-        # print(sql_args)
 
     try:
         discobot.bot_config.cursor.execute(sql_stmt, sql_args)
@@ -1298,7 +1152,6 @@ async def get_user_roles(user_id):
     try:
         discobot.bot_config.cursor.execute(sql_stmt, sql_args)
         result     = discobot.bot_config.cursor.fetchall()
-        # print("get_user_roles()", result)
 
         if (result):
             roles_list = [int(x) for x in result[0][0].split(", ")]
@@ -1321,10 +1174,6 @@ async def set_user_roles(user: discord.Member, roles_ids, reason: str = "bot add
     for role_id in roles_ids:
         server_role = server.get_role(role_id)
         roles.append(server_role)
-
-    # print(roles)
-    # for role in roles:
-    #     print(role.id, role.name)
 
     await user.add_roles(*roles, reason = reason, atomic = True)
 

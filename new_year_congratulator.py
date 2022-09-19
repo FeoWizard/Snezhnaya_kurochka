@@ -6,7 +6,7 @@ import discobot.logging_events
 import discobot.common_events
 import datetime
 
-from discobot.bot_config import DISCORD_BOT_TOKEN
+from discobot.bot_config import DISCORD_BOT_TOKEN, kurologger
 
 BOT_NAME          = "congratulator"
 DATE_STRING       = discobot.functions.get_basetime_string()[:-4].replace(" ", "_").replace(":", "-")
@@ -447,12 +447,12 @@ async def get_channel_objects():
 
 @discobot.bot_config.client.event
 async def on_ready():
-    print("\nLogged in as")
-    print("    User.name =", discobot.bot_config.client.user.name)
-    print("    User.id =",   discobot.bot_config.client.user.id)
-    print("    Latency: ",   discobot.bot_config.client.latency)
-    print("Client is ready!\n")
-    await discobot.functions.create_log_record("client is ready!")
+    login_string = f"\nLogged in as" \
+                   f"    User.name = {discobot.bot_config.client.user.name}" \
+                   f"    User.id   = {discobot.bot_config.client.user.id}" \
+                   f"Latency: {discobot.bot_config.client.latency}" \
+                   f"\nClient is ready!"
+    kurologger.info(msg = login_string)
 
 
 # Эта секция - и есть функция main, если скрипт запущен непосредственно (Не вызваны из других файлов)
@@ -464,28 +464,8 @@ if __name__ == "__main__":
         exit(-1)
 
 
-
-    file_mode = "w"
-    try:
-        log_file = open(LOGS_PATH, file_mode, encoding="utf-8")
-        discobot.bot_config.log_file = log_file  # Для добавления в модуль экземпляра лог-файла для текущего бота
-    except BaseException as Error:
-        print("Critical log file error:", Error)
-        print("Application will be closed")
-        input()
-        exit(-1)
-    print(discobot.functions.get_time_string() + " //:> " + BOT_NAME + "'s log file is open!\n")
-
-
-    try:
-        log_file.write("------------------- " + BOT_NAME + " session start -------------------\n")
-        log_file.write(discobot.functions.get_time_string() + " //:> Session started;\n")
-        log_file.flush()
-    except BaseException as Error:
-        print("log file error: ", Error)
-        print("Application will be closed")
-        input()
-        exit(-1)
+    kurologger.info(msg = "------------------- " + BOT_NAME + " session start -------------------\n")
+    kurologger.info(msg = "Session started;\n")
 
     try:
 

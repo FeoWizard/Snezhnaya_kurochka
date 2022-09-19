@@ -4,14 +4,15 @@ import discobot.bot_config
 import discobot.functions
 import discobot.common_events
 
-from datetime import datetime, timedelta
-from asyncio import sleep
+from datetime            import datetime, timedelta
+from asyncio             import sleep
+from discobot.bot_config import kurologger
 
 
 @discobot.bot_config.client.event
 async def on_member_join(member: discord.Member):
-    data_list = [None, discobot.functions.get_basetime_string(), member.id, discobot.functions.get_username(member),
-                 None, member.guild.id, member.guild.name, None, None, "ARRIVE"]
+    data_list = [ None, discobot.functions.get_basetime_string(), member.id, discobot.functions.get_username(member),
+                  None, member.guild.id, member.guild.name, None, None, "ARRIVE" ]
     await discobot.functions.database_user_log_write(data_list)
     if (discobot.bot_config.SEND_MESSAGE_SIGN):
         await discobot.functions.send_notification(member, "welcome", "prishel na server! :raised_hand::blush:")
@@ -23,8 +24,8 @@ async def on_member_join(member: discord.Member):
 
 @discobot.bot_config.client.event
 async def on_member_remove(member: discord.Member):
-    data_list = [None, discobot.functions.get_basetime_string(), member.id, discobot.functions.get_username(member),
-                 None, member.guild.id, member.guild.name, None, None, "LEAVE"]
+    data_list = [ None, discobot.functions.get_basetime_string(), member.id, discobot.functions.get_username(member),
+                  None, member.guild.id, member.guild.name, None, None, "LEAVE" ]
     await discobot.functions.database_user_log_write(data_list)
     await discobot.functions.save_user_roles(member)
     if (discobot.bot_config.SEND_MESSAGE_SIGN):
@@ -34,8 +35,8 @@ async def on_member_remove(member: discord.Member):
 @discobot.bot_config.client.event
 async def on_member_update(before, after):
     if (before.nick != after.nick):
-        data_list = [None, discobot.functions.get_basetime_string(), before.id, discobot.functions.get_username(before),
-                     None, before.guild.id, before.guild.name, before.nick, after.nick, "NICKNAME_CHANGE"]
+        data_list = [ None, discobot.functions.get_basetime_string(), before.id, discobot.functions.get_username(before),
+                      None, before.guild.id, before.guild.name, before.nick, after.nick, "NICKNAME_CHANGE" ]
         await discobot.functions.database_user_log_write(data_list)
 
     offline = discobot.bot_config.discord.Status.offline
@@ -47,7 +48,7 @@ async def on_member_update(before, after):
         try:
             discobot.bot_config.cursor.execute("UPDATE Connected_Users "
                                                "SET last_seen    = ? "
-                                               "WHERE UserID     = ?", [last_seen, before.id])
+                                               "WHERE UserID     = ?", [ last_seen, before.id ])
             discobot.bot_config.connection.commit()
         except BaseException as databaseErr:
             discobot.functions.create_database_error_record(databaseErr)
@@ -58,15 +59,15 @@ async def on_user_update(before, after):
     if (before.avatar != after.avatar):
         return
     else:
-        data_list = [None, discobot.functions.get_basetime_string(), before.id, discobot.functions.get_username(before),
-                     discobot.functions.get_username(after), None, None, None, None, "RENAME"]
+        data_list = [ None, discobot.functions.get_basetime_string(), before.id, discobot.functions.get_username(before),
+                      discobot.functions.get_username(after), None, None, None, None, "RENAME" ]
         await discobot.functions.database_user_log_write(data_list)
 
 
 @discobot.bot_config.client.event
 async def on_member_ban(guild, user):
-    data_list = [None, discobot.functions.get_basetime_string(), user.id, discobot.functions.get_username(user), None,
-                 guild.id, guild.name, None, None, "USER_BAN"]
+    data_list = [ None, discobot.functions.get_basetime_string(), user.id, discobot.functions.get_username(user), None,
+                  guild.id, guild.name, None, None, "USER_BAN" ]
     await discobot.functions.database_user_log_write(data_list)
     if (discobot.bot_config.SEND_MESSAGE_SIGN):
         await discobot.functions.send_notification(user, "leave",
@@ -76,8 +77,8 @@ async def on_member_ban(guild, user):
 
 @discobot.bot_config.client.event
 async def on_member_unban(guild, user):
-    data_list = [None, discobot.functions.get_basetime_string(), user.id, discobot.functions.get_username(user), None,
-                 guild.id, guild.name, None, None, "USER_UNBAN"]
+    data_list = [ None, discobot.functions.get_basetime_string(), user.id, discobot.functions.get_username(user), None,
+                  guild.id, guild.name, None, None, "USER_UNBAN" ]
     await discobot.functions.database_user_log_write(data_list)
     if (discobot.bot_config.SEND_MESSAGE_SIGN):
         await discobot.functions.send_notification(user, "welcome", "byl razbanen <:ningyo:513676059124957186>", guild)
@@ -126,7 +127,7 @@ async def on_raw_message_edit(payload):
         ORDER BY Date DESC
         LIMIT 1""", [payload.message_id])
 
-        result = discobot.bot_config.cursor.fetchall()  # Возвращает list of tuples вида [(x,), (y,), (z,)]
+        result      = discobot.bot_config.cursor.fetchall()  # Возвращает list of tuples вида [(x,), (y,), (z,)]
         result_list = list(discobot.functions.itertools.chain.from_iterable(result))
 
     except BaseException as databaseErr:
@@ -136,7 +137,6 @@ async def on_raw_message_edit(payload):
 
     if (result):
         # Если сообщение уже менялось
-
         result_list[0] = None
         result_list[1] = discobot.functions.get_basetime_string()
         result_list[8] = result_list[9]  # Меняем местами старое и новые значения,т.к. это "новое" - теперь будет старым
@@ -150,7 +150,6 @@ async def on_raw_message_edit(payload):
 
     else:
         # Если сведения об изменениях отсутствуют
-
         # Надо собрать нужную информацию перед записью изменённого сообщения
         # Достать из базы сообщение с этим ID
 
@@ -162,12 +161,11 @@ async def on_raw_message_edit(payload):
                 WHERE Messages.ChannelID = (?) 
                 AND Messages.MessageID = (?)""", data_list)
 
-                result = discobot.bot_config.cursor.fetchall()  # Возвращает list of tuples вида [(x,), (y,), (z,)]
+                result      = discobot.bot_config.cursor.fetchall()  # Возвращает list of tuples вида [(x,), (y,), (z,)]
                 result_list = list(discobot.functions.itertools.chain.from_iterable(result))
 
                 if (result is None):
-                    discobot.functions.create_database_error_record(databaseErr =
-                                                                    "Original of modified message not found!")
+                    discobot.functions.create_database_error_record(databaseErr = BaseException("Original of modified message not found!"))
                     return
 
                 break  # Выходим, только если всё завершилось успешно
@@ -200,9 +198,6 @@ async def on_raw_message_edit(payload):
                                                    + str(len(discobot.functions.message_buffer))
                                                    + " messages in message buffer")
 
-        print(discobot.functions.get_time_string() + " //:> The message was not recorded to the database,",
-              len(discobot.functions.message_buffer), "messages in message buffer")
-
 
 # События серверов ================================================================================================== #
 """data_list = [None, Date, ServerID, Old_server_name, New_server_name, Server_event]"""
@@ -210,18 +205,18 @@ async def on_raw_message_edit(payload):
 
 @discobot.bot_config.client.event
 async def on_guild_join(guild):
-    data_list = [None, discobot.functions.get_basetime_string(), guild.id, guild.name, None, "SERVER_INVITE"]
+    data_list = [ None, discobot.functions.get_basetime_string(), guild.id, guild.name, None, "SERVER_INVITE" ]
     await discobot.functions.database_server_log_write(data_list)
     discobot.functions.allowed_list = await discobot.functions.update_connections_list("on_guild_join")
     if (discobot.functions.grappling_flag is False):  # Запускать "новый" грапплер, если "старый" уже неактивен
         await discobot.functions.all_channels_grapple()
     else:
-        print(discobot.functions.get_time_string() + " //:> Grappler is already active!")
+        kurologger.info(msg = "Grappler is already active!")
 
 
 @discobot.bot_config.client.event
 async def on_guild_remove(guild):
-    data_list = [None, discobot.functions.get_basetime_string(), guild.id, guild.name, None, "SERVER_LEAVE"]
+    data_list = [ None, discobot.functions.get_basetime_string(), guild.id, guild.name, None, "SERVER_LEAVE" ]
     await discobot.functions.database_server_log_write(data_list)
     discobot.functions.allowed_list = await discobot.functions.update_connections_list("on_guild_remove")
 
@@ -271,8 +266,8 @@ async def on_guild_channel_update(before, after):
         await discobot.functions.channel_grappler(after)
 
     if (before.name != after.name):
-        data_list = [None, discobot.functions.get_basetime_string(), before.guild.id, before.guild.name, before.id,
-                     before.name, after.name, "GUILD_CHANNEL_RENAME"]
+        data_list = [ None, discobot.functions.get_basetime_string(), before.guild.id, before.guild.name, before.id,
+                      before.name, after.name, "GUILD_CHANNEL_RENAME" ]
         await discobot.functions.database_channel_log_write(data_list)
 
 # События серверных каналов ========================================================================================= #
@@ -280,8 +275,8 @@ async def on_guild_channel_update(before, after):
 
 @discobot.bot_config.client.event
 async def on_private_channel_create(channel):
-    data_list = [None, discobot.functions.get_basetime_string(), None, None, channel.id,
-                 str(channel), None, "PRIVATE_CHANNEL_CREATE"]
+    data_list = [ None, discobot.functions.get_basetime_string(), None, None, channel.id,
+                  str(channel), None, "PRIVATE_CHANNEL_CREATE" ]
     await discobot.functions.database_channel_log_write(data_list)
     discobot.functions.allowed_list = await discobot.functions.update_connections_list("on_private_channel_create")
 
@@ -298,10 +293,10 @@ async def on_private_channel_create(channel):
         result = discobot.bot_config.cursor.fetchone()  # Вытаскиваю дату последнего сообщения в канале
 
         if (result is None):
-
             Database_Channel_Miss_Error_String = "\nExpecting last message date, received NONE; Channel: " \
                                                  + str(channel)[:14] + "\n"
-            discobot.functions.create_database_error_record(Database_Channel_Miss_Error_String)
+
+            discobot.functions.create_database_error_record(BaseException(Database_Channel_Miss_Error_String))
             last_date = None
 
         else:
@@ -316,18 +311,17 @@ async def on_private_channel_create(channel):
 
 @discobot.bot_config.client.event
 async def on_private_channel_delete(channel):
-    data_list = [None, discobot.functions.get_basetime_string(), None, None, channel.id,
-                 str(channel), None, "PRIVATE_CHANNEL_DELETE"]
+    data_list = [ None, discobot.functions.get_basetime_string(), None, None, channel.id,
+                  str(channel), None, "PRIVATE_CHANNEL_DELETE" ]
     await discobot.functions.database_channel_log_write(data_list)
     discobot.functions.allowed_list = await discobot.functions.update_connections_list("on_private_channel_delete")
 
 
 @discobot.bot_config.client.event
 async def on_private_channel_update(before, after):
-
     if (before.name != after.name):
-        data_list = [None, discobot.functions.get_basetime_string(), None, None, before.id,
-                     str(before), str(after), "PRIVATE_CHANNEL_RENAME"]
+        data_list = [ None, discobot.functions.get_basetime_string(), None, None, before.id,
+                      str(before), str(after), "PRIVATE_CHANNEL_RENAME" ]
         await discobot.functions.database_channel_log_write(data_list)
     else:
         return None

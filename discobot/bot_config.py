@@ -1,4 +1,7 @@
 import discord
+import discobot.log_module as log_module
+
+kurologger = log_module.Logger_Factory(bot_name = "Kurochka").get_logger(logger_name = "Kurologger", date = True)
 
 
 
@@ -9,15 +12,15 @@ def get_intents():
 
 file_mode = "r"
 try:
-    token_file = open("discobot/token", file_mode, encoding="utf-8")
+    token_file = open("discobot/token", file_mode, encoding = "utf-8")
     DISCORD_BOT_TOKEN = token_file.readline().strip("")
     # MAIL_LOGIN        = token_file.readline().strip()
     # MAIL_PASSWORD     = token_file.readline().strip()
     # MAIL_DOMAIN       = token_file.readline().strip()
     token_file.close()
-except BaseException as Error:
-    print("Critical token file error:", Error)
-    print("Application will be closed")
+except BaseException as err:
+    kurologger.error(msg = "Critical token file error:", exc_info = err)
+    kurologger.error(msg = "Application will be closed", exc_info = err)
     input()
     exit(-1)
 
@@ -30,5 +33,4 @@ IMAGES_PATH       = "images/"
 SEND_MESSAGE_SIGN = None
 
 cursor     = None
-log_file   = None
 connection = None

@@ -10,6 +10,7 @@ from datetime import timedelta, datetime
 
 from discobot.bot_config import DISCORD_BOT_TOKEN
 from discobot.bot_config import IMAGES_PATH
+from discobot.bot_config import kurologger
 
 BOT_NAME             = "Kurochka"
 DATE_STRING          = discobot.functions.get_basetime_string()[:-4].replace(" ", "_").replace(":", "-")
@@ -43,7 +44,6 @@ async def on_message(message):
     is_edited      = 0  # имеет смысл NULL
 
     if (message.author == discobot.bot_config.client.user):
-
         is_this_bot_message = True
 
     if (message.author.id == 125159119622635520):
@@ -57,7 +57,6 @@ async def on_message(message):
         is_this_private_message = False
 
     if (is_this_private_message):
-
         server_id    = None  # имеет смысл NULL
         server_name  = ""
         channel_name = str(message.channel)[:14]  # 14 - Величина строки "Direct Message" #
@@ -73,7 +72,6 @@ async def on_message(message):
         del message_text
 
     else:
-
         server_id    = message.guild.id
         server_name  = message.guild.name
         channel_name = message.channel.name
@@ -81,8 +79,8 @@ async def on_message(message):
     # =========================== ЛОГГЕР ЗДЕСЬ ====================================================================== #
 
     if (message.channel.id in discobot.functions.channel_semaphore_list):
-        data_list = [None, time_string, server_name, server_id, channel_name, channel_id, username, user_id,
-                     message_string, message_id, str(att_list), is_deleted, is_edited]
+        data_list = [ None, time_string, server_name, server_id, channel_name, channel_id, username, user_id,
+                      message_string, message_id, str(att_list), is_deleted, is_edited ]
 
         await discobot.functions.database_message_log_write(data_list)
 
@@ -123,14 +121,7 @@ async def on_message(message):
                 await message.channel.send(file = image_file)
 
     except BaseException as imageErr:
-        try:  # пишем в файл ошибку - пытаемся
-            discobot.bot_config.log_file.write(discobot.functions.get_time_string() + " //:> image send error: "
-                                               + str(imageErr) + "\n")
-            discobot.bot_config.log_file.flush()
-        except BaseException as log_file_err:  # если НЕ ВЫШЛО - то хотя бы в консоль выведем весь пиздец
-            print(discobot.functions.get_time_string() + " //:> log file error:", log_file_err)
-        finally:
-            print(discobot.functions.get_time_string() + " //:> image send error:", imageErr)
+        kurologger.error(msg = "image send error!", exc_info = imageErr)
 
 # =============================================== Отправляем картинки =============================================== #
 
@@ -153,7 +144,7 @@ async def on_message(message):
         await message.add_reaction(emoji)
 
     elif (message_string.startswith("!name") and is_this_Snezhinka):
-        print(discobot.functions.get_time_string() + " //:> bot name:", BOT_NAME)
+        kurologger.info(msg = f"bot_name: {BOT_NAME}")
 
     elif (message_string.startswith("!emo") and is_this_Snezhinka):
         pass
@@ -168,7 +159,6 @@ async def on_message(message):
         await discobot.functions.send_rand_number(message_string, message.channel, message.author)
 
     elif ((len(good_night_regexp) > 0) and (not is_this_bot_message)):
-
         if SEND_MESSAGE_SIGN:
             await message.channel.send("Spokoynoy nochi, " + message.author.mention + " :raised_hand::blush:")
 
@@ -198,38 +188,6 @@ async def on_message(message):
         if SEND_MESSAGE_SIGN:
             await message.channel.send(help_message)
 
-    # elif message.content.startswith("!reboot"):
-    #     print("//:> bot reboot initialized")
-    #     reboot_code = True
-    #     await discobot.bot_config.client.logout()
-    #     asyncio.sleep(1)
-    #     discobot.bot_config.client.loop.stop()
-
-    # elif ( message.content.startswith("!block")
-    #        and (not is_this_bot_message)
-    #        and (not is_this_private_message)):
-    #
-    #     await discobot.functions.create_filter_record(message.author, message.author.guild) TODO: Убрать функцию
-    #
-    #     # Чтобы не добавлялось в массив фильтра, при повторном запросе !block
-    #     if (not (user_id, server_id) in Filter_list):
-    #         Filter_list.append((user_id, server_id))
-    #
-    # elif ( message.content.startswith("!unblock")
-    #        and (not is_this_bot_message)
-    #        and (not is_this_private_message)):
-    #
-    #     await discobot.functions.delete_filter_record(user_id, server_id) TODO: Убрать функцию
-    #
-    #     # Чтобы удалялось только, когда в массиве фильтра уже есть такой эл-т, при повторном вызове команды !unblock
-    #     if ( (user_id, server_id) in Filter_list):
-    #         Filter_list.remove((user_id, server_id))
-    #
-    # elif (( "!filter" in message_string )
-    #       and (not is_this_bot_message)
-    #       and (not is_this_private_message) ):
-    #
-    #     await discobot.functions.get_filter_info(message.author, message.author.guild) TODO: Убрать функцию
 
     elif (("!ny" in message_string) and (not is_this_bot_message)):
         await discobot.functions.get_new_year_time(message)
@@ -249,23 +207,26 @@ async def on_message(message):
 
 # Здесь !second_exit, чтобы не цеплялся основной бот
     elif ( message.content.startswith("!exit") and (is_this_Snezhinka) ):
-
-        print(discobot.functions.get_time_string() + " //:> " + BOT_NAME + " shutdown initialized")
+        kurologger.info(msg = f"{BOT_NAME} shutdown initialized")
         discobot.bot_config.client.loop.stop()
 
     elif ( message.content.startswith("!shutdown") and (is_this_Snezhinka) ):
-        print(discobot.functions.get_time_string() + " //:> " + BOT_NAME + " shutdown initialized")
+        kurologger.info(msg = f"{BOT_NAME} shutdown initialized")
         discobot.bot_config.client.loop.stop()
 
     elif ( message.content.startswith('!grapple') and (is_this_Snezhinka) ):
         if (discobot.functions.grappling_flag is False):  # Запускать "новый" грапплер, если "старый" уже неактивен
             await discobot.functions.all_channels_grapple()
         else:
-            print(discobot.functions.get_time_string() + " //:> Grappler is already active!")
+            kurologger.info(msg = "Grappler is already active!")
 
 
     elif ( message.content.startswith("!update") and (is_this_Snezhinka) ):
         discobot.functions.allowed_list = await discobot.functions.update_connections_list("User command!")
+
+
+    elif ( message.content.startswith("!test_error") and (is_this_Snezhinka) ):
+        raise Exception("Test exception for check logging!")
 
 
     elif ( not is_this_private_message ):
@@ -334,8 +295,7 @@ async def on_message(message):
             # await message.guild.ban(stupid_bitch, reason = "Pidoras ebanyi")
 
         elif (message.content.startswith("!buffer") and (is_this_Snezhinka)):
-            print(discobot.functions.get_time_string() + " //:> message buffer count:",
-                  (discobot.functions.message_buffer_counter()))
+            kurologger.info(msg = f"message buffer count: {discobot.functions.message_buffer_counter()}")
 
         elif (message.content.startswith("!flush") and (is_this_Snezhinka)):
             await discobot.functions.message_buffer_flush()
@@ -346,102 +306,40 @@ async def on_message(message):
 
 # Эта секция - и есть функция main, если скрипт запущен непосредственно (Не вызваны из других файлов)
 if __name__ == "__main__":
-    # ==============================================================================
-    # file_mode = "w"
-    # temp_file = open( "logs/" + BOT_NAME + "/message_edit_temp.txt", file_mode, encoding="utf-8")
-    # ==============================================================================
 
-    file_mode = "w"
-    try:
-        log_file = open(LOGS_PATH, file_mode, encoding = "utf-8")
-        discobot.bot_config.log_file = log_file  # Для добавления в модуль экземпляра лог-файла для текущего бота
-    except BaseException as Error:
-        print("Critical log file error:", Error)
-        print("Application will be closed")
-        input()
-        exit(-1)
-    print(discobot.functions.get_time_string() + " //:> " + BOT_NAME + "'s log file is open!\n")
+    kurologger.info(msg = "------------------- " + BOT_NAME + " session start -------------------")
+    kurologger.info(msg = "Session started;")
 
     try:
-        log_file.write("------------------- " + BOT_NAME + " session start -------------------\n")
-        log_file.write(discobot.functions.get_time_string() + " //:> Session started;\n")
-        log_file.flush()
-    except BaseException as Error:
-        print("log file error: ", Error)
-        print("Application will be closed")
-        input()
-        exit(-1)
+        kurologger.info(msg = f"Open {BOT_NAME}'s database connection")
 
-    try:
-        print(discobot.functions.get_time_string() + " //:> Open " + BOT_NAME + "'s database connection")
         discobot.bot_config.connection = sqlite3.connect(DATABASE_PATH)
-        # Для добавления в модуль конфигурации экземпляра соединения для текущего бота
-        discobot.bot_config.cursor = discobot.bot_config.connection.cursor()
-        # Для добавления в модуль конфигурации экземпляра курсора для текущего бота
+        discobot.bot_config.cursor     = discobot.bot_config.connection.cursor()
+
     except BaseException as err:
-        print("Base connection error:", err)
-        print("Application will be closed")
-
-        try:
-            log_file.write(discobot.functions.get_time_string() + " //:> Base connection error: " + str(err) + "\n")
-            log_file.write("------------------- " + BOT_NAME + " session end -------------------\n")
-            log_file.flush()
-        except BaseException as fileErr:
-            print(discobot.functions.get_time_string() + " //:> log file error:", fileErr)
-        finally:
-            log_file.close()
-
+        kurologger.error(msg = "Database connection error", exc_info = err)
         input()
         exit(-1)
 
-    # Здесь заполнение массива фильтров логгирования ================================================================ #
-    # try:
-    #     discobot.bot_config.cursor.execute(
-    #         "SELECT Exception_Users.UserID, Exception_Users.ServerID FROM Exception_Users")
-    #     Filter_list = discobot.bot_config.cursor.fetchall()
-    # except BaseException as databaseErr:
-    #     print("Critical database error, application will be closed")
-    #
-    #     try:
-    #         log_file.write(
-    #             discobot.functions.get_time_string() + " //:> Critical database error: " + str(databaseErr) + "\n")
-    #         log_file.write("------------------- " + BOT_NAME + " session end -------------------\n")
-    #         log_file.flush()
-    #     except BaseException as fileErr:
-    #         print(discobot.functions.get_time_string() + " //:> log file error:", fileErr)
-    #     finally:
-    #         log_file.close()
-    #     input()
-    #     exit(-1)
-    # Здесь заполнение массива фильтров логгирования ================================================================ #
 
     try:
-
         discobot.bot_config.client.loop.create_task(discobot.bot_config.client.connect())
         discobot.bot_config.client.loop.create_task(discobot.bot_config.client.login(token = DISCORD_BOT_TOKEN, bot = True))
         discobot.bot_config.client.loop.run_forever()
 
     except KeyboardInterrupt:
 
-        print("\n" + discobot.functions.get_time_string() + " //:> " + BOT_NAME + " logout manually")
+        kurologger.info(msg = f"{BOT_NAME} logout manually")
 
     finally:
 
         discobot.bot_config.client.loop.run_until_complete(discobot.bot_config.client.close())
-        print(discobot.functions.get_time_string() + " //:> " + BOT_NAME + " logout")
+        kurologger.info(msg = f"{BOT_NAME} logout")
 
         discobot.bot_config.client.loop.close()
-        print(discobot.functions.get_time_string() + " //:> " + BOT_NAME + "'s event loop is closed!")
+        kurologger.info(msg = f"{BOT_NAME}'s event loop is closed!")
 
         discobot.bot_config.connection.close()
-        print(discobot.functions.get_time_string() + " //:> " + BOT_NAME + "'s database connection is closed!")
+        kurologger.info(msg = f"{BOT_NAME}'s database connection is closed!")
 
-        try:
-            log_file.write(discobot.functions.get_time_string() + " //:> Session ended;\n")
-            log_file.write("------------------- " + BOT_NAME + " session end -------------------\n")
-            log_file.flush()
-        except BaseException as Error:
-            print(discobot.functions.get_time_string() + " log file error: ", Error)
-
-        log_file.close()
-        print(discobot.functions.get_time_string() + " //:> " + BOT_NAME + "'s log file is closed!")
+        kurologger.info(msg = "Session ended;\n")
