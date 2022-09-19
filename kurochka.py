@@ -1,4 +1,4 @@
-import discobot.bot_config
+import discobot.bot_init
 import discobot.functions
 import discobot.logging_events
 import discobot.common_events
@@ -8,9 +8,9 @@ import re
 
 from datetime import timedelta, datetime
 
-from discobot.bot_config import DISCORD_BOT_TOKEN
-from discobot.bot_config import IMAGES_PATH
-from discobot.bot_config import kurologger
+from discobot.bot_init import DISCORD_BOT_TOKEN
+from discobot.bot_init import IMAGES_PATH
+from discobot.bot_init import kurologger
 
 BOT_NAME             = "Kurochka"
 DATE_STRING          = discobot.functions.get_basetime_string()[:-4].replace(" ", "_").replace(":", "-")
@@ -24,7 +24,7 @@ LOGS_PATH, DATABASE_PATH = discobot.functions.init(BOT_NAME, DATE_STRING, SEND_M
 # =============================================== СОБЫТИЯ MESSAGE LOOP =============================================== #
 
 
-@discobot.bot_config.client.event
+@discobot.bot_init.client.event
 async def on_message(message):
     is_bot_mentioned        = False
     is_this_bot_message     = False
@@ -43,7 +43,7 @@ async def on_message(message):
     is_deleted     = 0
     is_edited      = 0  # имеет смысл NULL
 
-    if (message.author == discobot.bot_config.client.user):
+    if (message.author == discobot.bot_init.client.user):
         is_this_bot_message = True
 
     if (message.author.id == 125159119622635520):
@@ -61,13 +61,11 @@ async def on_message(message):
         server_name  = ""
         channel_name = str(message.channel)[:14]  # 14 - Величина строки "Direct Message" #
 
-        message_text = "Пользователь {} написал в личные сообщения!" \
-                       "\n=====================================Текст сообщения:\n{}" \
-                       "\n=====================================Прикрепления:\n{}" \
-                       "\n=====================================Встроенный контент:\n{}".format(message.author,
-                                                                                               message.content,
-                                                                                               message.attachments,
-                                                                                               message.embeds)
+        message_text = f"Пользователь {message.author} написал в личные сообщения!" \
+                       f"\n=====================================Текст сообщения:\n{message.content}" \
+                       f"\n=====================================Прикрепления:\n{message.attachments}" \
+                       f"\n=====================================Встроенный контент:\n{message.embeds}"
+
         await discobot.functions.send_mail("ilromik@rambler.ru", "СООБЩЕНИЕ ОТ КУРОЧКИ", message_text)
         del message_text
 
@@ -86,7 +84,7 @@ async def on_message(message):
 
     # =========================== ЛОГГЕР ЗДЕСЬ ====================================================================== #
 
-    if discobot.bot_config.client.user.mentioned_in(message):
+    if discobot.bot_init.client.user.mentioned_in(message):
         is_bot_mentioned = True
 
     message_string = message_string.lower()
@@ -134,7 +132,7 @@ async def on_message(message):
             and not is_this_bot_message):
 
         if SEND_MESSAGE_SIGN:
-            await message.channel.send("Priveeet, ya - " + discobot.bot_config.client.user.name
+            await message.channel.send("Priveeet, ya - " + discobot.bot_init.client.user.name
                                                          + "! :wave::blush:")
 
         # 152107008625999873 - ID Kaoru
@@ -208,11 +206,11 @@ async def on_message(message):
 # Здесь !second_exit, чтобы не цеплялся основной бот
     elif ( message.content.startswith("!exit") and (is_this_Snezhinka) ):
         kurologger.info(msg = f"{BOT_NAME} shutdown initialized")
-        discobot.bot_config.client.loop.stop()
+        discobot.bot_init.client.loop.stop()
 
     elif ( message.content.startswith("!shutdown") and (is_this_Snezhinka) ):
         kurologger.info(msg = f"{BOT_NAME} shutdown initialized")
-        discobot.bot_config.client.loop.stop()
+        discobot.bot_init.client.loop.stop()
 
     elif ( message.content.startswith('!grapple') and (is_this_Snezhinka) ):
         if (discobot.functions.grappling_flag is False):  # Запускать "новый" грапплер, если "старый" уже неактивен
@@ -313,8 +311,8 @@ if __name__ == "__main__":
     try:
         kurologger.info(msg = f"Open {BOT_NAME}'s database connection")
 
-        discobot.bot_config.connection = sqlite3.connect(DATABASE_PATH)
-        discobot.bot_config.cursor     = discobot.bot_config.connection.cursor()
+        discobot.bot_init.connection = sqlite3.connect(DATABASE_PATH)
+        discobot.bot_init.cursor     = discobot.bot_init.connection.cursor()
 
     except BaseException as err:
         kurologger.error(msg = "Database connection error", exc_info = err)
@@ -323,9 +321,9 @@ if __name__ == "__main__":
 
 
     try:
-        discobot.bot_config.client.loop.create_task(discobot.bot_config.client.connect())
-        discobot.bot_config.client.loop.create_task(discobot.bot_config.client.login(token = DISCORD_BOT_TOKEN, bot = True))
-        discobot.bot_config.client.loop.run_forever()
+        discobot.bot_init.client.loop.create_task(discobot.bot_init.client.connect())
+        discobot.bot_init.client.loop.create_task(discobot.bot_init.client.login(token = DISCORD_BOT_TOKEN, bot = True))
+        discobot.bot_init.client.loop.run_forever()
 
     except KeyboardInterrupt:
 
@@ -333,13 +331,13 @@ if __name__ == "__main__":
 
     finally:
 
-        discobot.bot_config.client.loop.run_until_complete(discobot.bot_config.client.close())
+        discobot.bot_init.client.loop.run_until_complete(discobot.bot_init.client.close())
         kurologger.info(msg = f"{BOT_NAME} logout")
 
-        discobot.bot_config.client.loop.close()
+        discobot.bot_init.client.loop.close()
         kurologger.info(msg = f"{BOT_NAME}'s event loop is closed!")
 
-        discobot.bot_config.connection.close()
+        discobot.bot_init.connection.close()
         kurologger.info(msg = f"{BOT_NAME}'s database connection is closed!")
 
         kurologger.info(msg = "Session ended;\n")

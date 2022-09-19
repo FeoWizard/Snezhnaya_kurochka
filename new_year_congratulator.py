@@ -1,12 +1,12 @@
 import asyncio
 
-import discobot.bot_config
+import discobot.bot_init
 import discobot.functions
 import discobot.logging_events
 import discobot.common_events
 import datetime
 
-from discobot.bot_config import DISCORD_BOT_TOKEN, kurologger
+from discobot.bot_init import DISCORD_BOT_TOKEN, kurologger
 
 BOT_NAME          = "congratulator"
 DATE_STRING       = discobot.functions.get_basetime_string()[:-4].replace(" ", "_").replace(":", "-")
@@ -23,11 +23,11 @@ async def new_year_greetings():
 
     await asyncio.sleep(5)
 
-    Konosuba     = discobot.bot_config.client.get_channel(200910511536078848)
-    Neosilyators = discobot.bot_config.client.get_channel(233963643153154048)
-    Bratki       = discobot.bot_config.client.get_channel(361255560836022276)
-    Darkest      = discobot.bot_config.client.get_channel(643341791961153536)
-    Eternal_dojo = discobot.bot_config.client.get_channel(485502199498014752)
+    Konosuba     = discobot.bot_init.client.get_channel(200910511536078848)
+    Neosilyators = discobot.bot_init.client.get_channel(233963643153154048)
+    Bratki       = discobot.bot_init.client.get_channel(361255560836022276)
+    Darkest      = discobot.bot_init.client.get_channel(643341791961153536)
+    Eternal_dojo = discobot.bot_init.client.get_channel(485502199498014752)
 
     message_string = ":chicken: Kurochka Tochnogo Vremeni nachinaet svoyu rabotu! :chicken:"
     
@@ -436,21 +436,21 @@ async def get_channel_objects():
     # 415854406756728855    Darkest_Server          643341791961153536    system
     # 485502198944497666    eternal    dojo         485502199498014752    general
 
-    Konosuba     = discobot.bot_config.client.get_channel(200910511536078848)
-    Neosilyators = discobot.bot_config.client.get_channel(233963643153154048)
-    Bratki       = discobot.bot_config.client.get_channel(361255560836022276)
-    Darkest      = discobot.bot_config.client.get_channel(643341791961153536)
-    eternal_dojo = discobot.bot_config.client.get_channel(485502199498014752)
+    Konosuba     = discobot.bot_init.client.get_channel(200910511536078848)
+    Neosilyators = discobot.bot_init.client.get_channel(233963643153154048)
+    Bratki       = discobot.bot_init.client.get_channel(361255560836022276)
+    Darkest      = discobot.bot_init.client.get_channel(643341791961153536)
+    eternal_dojo = discobot.bot_init.client.get_channel(485502199498014752)
 
     return Konosuba, Neosilyators, Bratki, Darkest, eternal_dojo
 
 
-@discobot.bot_config.client.event
+@discobot.bot_init.client.event
 async def on_ready():
     login_string = f"\nLogged in as" \
-                   f"    User.name = {discobot.bot_config.client.user.name}" \
-                   f"    User.id   = {discobot.bot_config.client.user.id}" \
-                   f"Latency: {discobot.bot_config.client.latency}" \
+                   f"    User.name = {discobot.bot_init.client.user.name}" \
+                   f"    User.id   = {discobot.bot_init.client.user.id}" \
+                   f"Latency: {discobot.bot_init.client.latency}" \
                    f"\nClient is ready!"
     kurologger.info(msg = login_string)
 
@@ -469,10 +469,10 @@ if __name__ == "__main__":
 
     try:
 
-        discobot.bot_config.client.loop.create_task(discobot.bot_config.client.connect())
-        discobot.bot_config.client.loop.create_task(discobot.bot_config.client.login(DISCORD_BOT_TOKEN))
-        discobot.bot_config.client.loop.create_task(new_year_greetings())
-        discobot.bot_config.client.loop.run_forever()
+        discobot.bot_init.client.loop.create_task(discobot.bot_init.client.connect())
+        discobot.bot_init.client.loop.create_task(discobot.bot_init.client.login(DISCORD_BOT_TOKEN))
+        discobot.bot_init.client.loop.create_task(new_year_greetings())
+        discobot.bot_init.client.loop.run_forever()
 
     except KeyboardInterrupt:
 
@@ -480,7 +480,7 @@ if __name__ == "__main__":
 
     finally:
 
-        discobot.bot_config.client.loop.run_until_complete(discobot.bot_config.client.logout())
+        discobot.bot_init.client.loop.run_until_complete(discobot.bot_init.client.logout())
         print(discobot.functions.get_time_string() + " //:> " + BOT_NAME + " logout")
 
         discobot.bot_config.client.loop.close()
