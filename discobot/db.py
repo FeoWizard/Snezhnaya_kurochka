@@ -9,7 +9,8 @@ class SQLiteWorker():
         self._logger: logging.Logger = logger
 
 
-    def db_error_catcher(self, function_to_decorate):
+    @staticmethod
+    def db_error_catcher(function_to_decorate):
         def wrapper(*args, **kwargs):
             try:
                 result = function_to_decorate(*args, **kwargs)

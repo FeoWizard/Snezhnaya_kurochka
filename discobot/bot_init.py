@@ -18,7 +18,7 @@ IMAGES_PATH       = "images/"
 SEND_MESSAGE_SIGN = None
 
 
-db_worker  = discobot.db.SQLiteWorker(database_path = DATABASE_PATH, logger = kurologger)
+# db_worker  = discobot.db.SQLiteWorker(database_path = DATABASE_PATH, logger = kurologger)
 
 cursor     = None
 connection = None
