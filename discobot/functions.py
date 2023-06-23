@@ -26,8 +26,8 @@ message_buffer         = []  # Список сообщений, НЕ занес�
 
 def init(BOT_NAME: str, DATE_STRING: str, SEND_MESSAGE_SIGN: bool, CHANNEL_GRAPPLE_SIGN: bool):
 
-    LOG_FILENAME                          = BOT_NAME + "_" + DATE_STRING + ".txt"
-    DATABASE_FILENAME                     = BOT_NAME + "_base.db"
+    LOG_FILENAME                        = BOT_NAME + "_" + DATE_STRING + ".txt"
+    DATABASE_FILENAME                   = BOT_NAME + "_base.db"
     discobot.bot_init.DATABASE_PATH    += DATABASE_FILENAME
     discobot.bot_init.LOGS_PATH        += BOT_NAME + "/"
 
@@ -144,9 +144,8 @@ async def get_user_from_connections_table(message, user):
         # В случае ошибки чтения из базы оповещаем + логгируем и выходим
         create_database_error_record(databaseErr)
         if discobot.bot_init.SEND_MESSAGE_SIGN:
-            await message.channel.send(
-                "Error occured! <:itai:485529311353241640>\nError reading service tables, "
-                "please write to <@!125159119622635520>")
+            await message.channel.send("Error occured! <:itai:485529311353241640>\nError reading service tables, "
+                                       "please write to <@!125159119622635520>")
         return None
 
 
@@ -285,7 +284,7 @@ async def update_connections_list(reason: str):
     try:
         for channel in discobot.bot_init.client.get_all_channels():  # Берёт только каналы от серверов - без приватных
 
-            permissions        = channel.permissions_for(member = channel.guild.me)
+            permissions        = channel.permissions_for(channel.guild.me)
             is_read_allowed    = permissions.read_messages
             is_history_allowed = permissions.read_message_history
 
@@ -325,19 +324,18 @@ async def update_connections_list(reason: str):
                 allowed_channels.append(channel)
 
         if (len(data_insert_list) > 0):
-            discobot.bot_init.cursor.executemany("INSERT INTO Connected_Channels "
-                                                   "VALUES (?, ?, ?, ?, ?, ?, ?, ?)", data_insert_list)
+            discobot.bot_init.cursor.executemany("INSERT INTO Connected_Channels VALUES (?, ?, ?, ?, ?, ?, ?, ?)", data_insert_list)
 
         if (len(data_update_list) > 0):
             discobot.bot_init.cursor.executemany("UPDATE Connected_Channels "
-                                                   "SET ServerID           = ?,"
-                                                   "    ChannelName        = ?,"
-                                                   "    ChannelType        = ?,"
-                                                   "    is_read_allowed    = ?,"
-                                                   "    is_history_allowed = ?,"
-                                                   "    is_connected       = ?,"
-                                                   "    last_seen          = ? "
-                                                   "WHERE ChannelID        = ?", data_update_list)
+                                                 "SET ServerID           = ?,"
+                                                 "    ChannelName        = ?,"
+                                                 "    ChannelType        = ?,"
+                                                 "    is_read_allowed    = ?,"
+                                                 "    is_history_allowed = ?,"
+                                                 "    is_connected       = ?,"
+                                                 "    last_seen          = ? "
+                                                 "WHERE ChannelID        = ?", data_update_list)
         discobot.bot_init.connection.commit()
 
     except BaseException as databaseErr:
@@ -365,9 +363,9 @@ async def update_connections_list(reason: str):
 
         if (len(data_update_list) > 0):
             discobot.bot_init.cursor.executemany("UPDATE Connected_Users "
-                                                   "SET Username     = ?,"
-                                                   "is_connected     = ? "
-                                                   "WHERE UserID     = ?", data_update_list)
+                                                 "SET Username     = ?,"
+                                                 "is_connected     = ? "
+                                                 "WHERE UserID     = ?", data_update_list)
         discobot.bot_init.connection.commit()
     except BaseException as databaseErr:
         create_database_error_record(databaseErr)
@@ -912,9 +910,17 @@ async def channel_grappler(channel, last_date: datetime = None):
         try:
             kurologger.info(msg = "Try to grapple the channel!")
             if (last_date is not None):
-                messages_list = await channel.history(limit = None, after = last_date, oldest_first = True).flatten()
+                messages_list = channel.history(limit = None, after = last_date, oldest_first = True)
             elif (last_date is None):
-                messages_list = await channel.history(limit = None, oldest_first = True).flatten()
+                messages_list = channel.history(limit = None, oldest_first = True)
+
+            sync_list = []
+            async for message in messages_list:
+                sync_list.append(message)
+
+            messages_list = sync_list
+            gc.collect()
+
 
         except BaseException as error:
             kurologger.error(msg = f"Channel: {channel_name}; Server: {guild}; Error: {error}", exc_info = error)
@@ -985,9 +991,7 @@ async def channel_grappler(channel, last_date: datetime = None):
 
     while (True):
         try:
-            discobot.bot_init.cursor.executemany("INSERT INTO Messages VALUES"
-                                                   " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                                                   data_list)
+            discobot.bot_init.cursor.executemany("INSERT INTO Messages VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", data_list)
             discobot.bot_init.connection.commit()
         except BaseException as databaseErr:
             discobot.functions.create_database_error_record(databaseErr)

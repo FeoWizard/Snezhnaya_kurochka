@@ -1,3 +1,5 @@
+import asyncio
+
 import discobot.bot_init
 import discobot.functions
 import discobot.logging_events
@@ -206,11 +208,11 @@ async def on_message(message):
 # Здесь !second_exit, чтобы не цеплялся основной бот
     elif ( message.content.startswith("!exit") and (is_this_Snezhinka) ):
         kurologger.info(msg = f"{BOT_NAME} shutdown initialized")
-        discobot.bot_init.client.loop.stop()
+        await discobot.bot_init.client.close()
 
     elif ( message.content.startswith("!shutdown") and (is_this_Snezhinka) ):
         kurologger.info(msg = f"{BOT_NAME} shutdown initialized")
-        discobot.bot_init.client.loop.stop()
+        await discobot.bot_init.client.close()
 
     elif ( message.content.startswith('!grapple') and (is_this_Snezhinka) ):
         if (discobot.functions.grappling_flag is False):  # Запускать "новый" грапплер, если "старый" уже неактивен
@@ -302,9 +304,9 @@ async def on_message(message):
 # =============================================== СОБЫТИЯ MESSAGE LOOP =============================================== #
 
 
+
 # Эта секция - и есть функция main, если скрипт запущен непосредственно (Не вызваны из других файлов)
 if __name__ == "__main__":
-
     kurologger.info(msg = "------------------- " + BOT_NAME + " session start -------------------")
     kurologger.info(msg = "Session started;")
 
@@ -321,21 +323,19 @@ if __name__ == "__main__":
 
 
     try:
-        discobot.bot_init.client.loop.create_task(discobot.bot_init.client.connect())
-        discobot.bot_init.client.loop.create_task(discobot.bot_init.client.login(token = DISCORD_BOT_TOKEN, bot = True))
-        discobot.bot_init.client.loop.run_forever()
+        discobot.bot_init.client.run(token = discobot.bot_init.DISCORD_BOT_TOKEN, reconnect = True, root_logger = True)
+        discobot.bot_init.bot.close()
 
     except KeyboardInterrupt:
-
         kurologger.info(msg = f"{BOT_NAME} logout manually")
 
     finally:
 
-        discobot.bot_init.client.loop.run_until_complete(discobot.bot_init.client.close())
+        discobot.bot_init.client.close()
         kurologger.info(msg = f"{BOT_NAME} logout")
 
-        discobot.bot_init.client.loop.close()
-        kurologger.info(msg = f"{BOT_NAME}'s event loop is closed!")
+        # discobot.bot_init.client.loop.close()
+        # kurologger.info(msg = f"{BOT_NAME}'s event loop is closed!")
 
         discobot.bot_init.connection.close()
         kurologger.info(msg = f"{BOT_NAME}'s database connection is closed!")
