@@ -321,9 +321,11 @@ if __name__ == "__main__":
 
 
     try:
-        discobot.bot_init.client.loop.create_task(discobot.bot_init.client.connect())
-        discobot.bot_init.client.loop.create_task(discobot.bot_init.client.login(token = DISCORD_BOT_TOKEN, bot = True))
-        discobot.bot_init.client.loop.run_forever()
+        # discobot.bot_init.client.loop.create_task(discobot.bot_init.client.connect())
+        # discobot.bot_init.client.loop.create_task(discobot.bot_init.client.login(token = DISCORD_BOT_TOKEN, bot = True))
+        # discobot.bot_init.client.loop.run_forever()
+
+        discobot.bot_init.client.run(token = DISCORD_BOT_TOKEN, reconnect = True, root_logger = False)
 
     except KeyboardInterrupt:
 

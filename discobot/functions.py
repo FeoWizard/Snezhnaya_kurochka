@@ -285,7 +285,7 @@ async def update_connections_list(reason: str):
     try:
         for channel in discobot.bot_init.client.get_all_channels():  # Берёт только каналы от серверов - без приватных
 
-            permissions        = channel.permissions_for(member = channel.guild.me)
+            permissions        = channel.permissions_for(channel.guild.me)
             is_read_allowed    = permissions.read_messages
             is_history_allowed = permissions.read_message_history
 
@@ -912,9 +912,9 @@ async def channel_grappler(channel, last_date: datetime = None):
         try:
             kurologger.info(msg = "Try to grapple the channel!")
             if (last_date is not None):
-                messages_list = await channel.history(limit = None, after = last_date, oldest_first = True).flatten()
+                messages_list = channel.history(limit = None, after = last_date, oldest_first = True)
             elif (last_date is None):
-                messages_list = await channel.history(limit = None, oldest_first = True).flatten()
+                messages_list = channel.history(limit = None, oldest_first = True)
 
         except BaseException as error:
             kurologger.error(msg = f"Channel: {channel_name}; Server: {guild}; Error: {error}", exc_info = error)
@@ -928,6 +928,8 @@ async def channel_grappler(channel, last_date: datetime = None):
     discobot.functions.channel_semaphore_list.append(channel.id)  # Добавляем Айдишник в список-семафор сразу
     # после завершения сбора сообщений с сервера (т.к. больше мы не соберём, а это значит, что с этого момента
     # можно логгировать этот канал со спокойной душой)
+
+    messages_list = [mess async for mess in messages_list]
 
     if ( len(messages_list) == 0 ):
         await discobot.functions.create_log_record(info_string + "; no grappled messages")
@@ -1044,6 +1046,8 @@ async def all_channels_grapple():
 
             except BaseException as databaseErr:
                 discobot.functions.create_database_error_record(databaseErr)
+
+        await asyncio.sleep(0.1)
 
     await discobot.functions.create_log_record("Channel grappling complete!")
     discobot.functions.grappling_flag = False
